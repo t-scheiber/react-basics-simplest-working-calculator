@@ -1,0 +1,16 @@
+[phases.setup]
+nixPkgs = ["nodejs_22", "bun"]
+
+[phases.install]
+cmds = ["bun install"]
+
+[phases.build]
+cmds = ["bun run build"]
+
+[start]
+# Use the production start script so we always serve the built assets
+cmd = "bun run start:prod"
+
+[staticAssets]
+publicDir = "build"
+
