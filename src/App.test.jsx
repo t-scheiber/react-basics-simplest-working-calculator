@@ -67,11 +67,86 @@ test("resets the result while retaining the input", () => {
   expect(result).toHaveTextContent(/^0$/);
 });
 
-test("preserves the existing zero-divisor behavior", () => {
+test.each([["5", "0"], ["0", "0"], ["5", "-0"]])("reports division of %s by %s while retaining the last valid result", (initial, divisor) => {
+  const { result, input, click } = calculator();
+  fireEvent.change(input, { target: { value: initial } });
+  click("add");
+  fireEvent.change(input, { target: { value: divisor } });
+  click("divide");
+  expect(result.textContent).toBe(initial);
+  expect(screen.getByRole("alert")).toHaveTextContent("Cannot divide by zero.");
+  expect(input).toHaveAccessibleDescription("Cannot divide by zero.");
+  expect(input).toHaveAttribute("aria-invalid", "true");
+});
+
+test("a valid operation clears an error and continues from the last valid result", () => {
   const { result, input, click } = calculator();
   fireEvent.change(input, { target: { value: "5" } });
   click("add");
   fireEvent.change(input, { target: { value: "0" } });
   click("divide");
-  expect(result).toHaveTextContent(/^Infinity$/);
+  fireEvent.change(input, { target: { value: "2" } });
+  click("divide");
+  expect(result).toHaveTextContent(/^2.5$/);
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(input).not.toHaveAttribute("aria-describedby");
+  expect(input).not.toHaveAttribute("aria-invalid", "true");
+});
+
+test.each(["reset input", "reset result"])("%s clears an error and retains its original reset behavior", reset => {
+  const { result, input, click } = calculator();
+  fireEvent.change(input, { target: { value: "7" } });
+  click("add");
+  fireEvent.change(input, { target: { value: "0" } });
+  click("divide");
+  expect(screen.getByRole("alert")).toBeInTheDocument();
+  click(reset);
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(result.textContent).toBe(reset === "reset result" ? "0" : "7");
+  expect(input).toHaveValue(0);
+});
+
+test.each(["add", "subtract", "multiply", "divide"])("%s rejects an empty operand without changing the result", operation => {
+  const { result, input, click } = calculator();
+  fireEvent.change(input, { target: { value: "7" } });
+  click("add");
+  fireEvent.change(input, { target: { value: "" } });
+  click(operation);
+  expect(result).toHaveTextContent(/^7$/);
+  expect(screen.getByRole("alert")).toHaveTextContent("Enter a finite number.");
+});
+
+test.each(["1e309", "not a number"])("rejects the browser's invalid number entry %s", value => {
+  const { result, input, click } = calculator();
+  fireEvent.change(input, { target: { value } });
+  click("add");
+  expect(result).toHaveTextContent(/^0$/);
+  expect(screen.getByRole("alert")).toHaveTextContent("Enter a finite number.");
+});
+
+test.each([
+  ["1e308", "1e308", "add"],
+  ["-1e308", "1e308", "subtract"],
+  ["1e308", "2", "multiply"],
+  ["1", "1e-309", "divide"],
+])("retains %s when %s would overflow through %s", (initial, operand, operation) => {
+  const { result, input, click } = calculator();
+  fireEvent.change(input, { target: { value: initial } });
+  click("add");
+  const previous = result.textContent;
+  fireEvent.change(input, { target: { value: operand } });
+  click(operation);
+  expect(result.textContent).toBe(previous);
+  expect(screen.getByRole("alert")).toHaveTextContent("Result is too large. Try a smaller number.");
+});
+
+test("continues to accept finite scientific notation and very small results", () => {
+  const { result, input, click } = calculator();
+  fireEvent.change(input, { target: { value: "1" } });
+  click("add");
+  fireEvent.change(input, { target: { value: "1e308" } });
+  click("divide");
+  expect(result).toHaveTextContent(/^1e-308$/);
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(input).not.toHaveAttribute("pattern");
 });
