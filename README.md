@@ -40,5 +40,3 @@ The tests render the component with Testing Library. They cover the four operati
 ## Deployment
 
 `nixpacks.toml` installs with `bun install --frozen-lockfile`, runs `bun run build` and starts `bun run start:prod`. The app reads no environment variables. The start script reads `PORT`.
-
-The live app is at https://react-basics-simplest-working-calculator.thomasscheiber.com/.
