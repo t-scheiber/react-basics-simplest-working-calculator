@@ -1,6 +1,8 @@
 # Simplest Working Calculator
 A React calculator built as an exercise in the React Basics course of the Meta Front-End Developer certificate on Coursera, taken in 2023 and 2024.
 
+Live site: https://react-calculator.thomasscheiber.com
+
 The app keeps a running result. Type a number, then press add, subtract, multiply or divide to combine it with the result. The result starts at 0. For example, a result of 10 and a number of 3 become 30 after multiply.
 
 ## What it does
@@ -40,3 +42,5 @@ The tests render the component with Testing Library. They cover the four operati
 ## Deployment
 
 `nixpacks.toml` installs with `bun install --frozen-lockfile`, runs `bun run build` and starts `bun run start:prod`. The app reads no environment variables. The start script reads `PORT`.
+
+The live site runs on a self-hosted Coolify server and does not use that start script. Its build runs the tests, `bun run build`, the linter and `bun run test:production`, and nginx serves the `build/` folder.
